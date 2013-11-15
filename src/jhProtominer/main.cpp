@@ -1,7 +1,6 @@
-#include"global.h"
+#include "global.h"
 #include <time.h>
 
-// miner version string (for pool statistic)
 char* minerVersionString = "jhProtominer for PTSPool.com";
 
 minerSettings_t minerSettings = {0};
@@ -19,11 +18,8 @@ typedef struct
 	sint32 port;
 	sint32 numThreads;
 	uint32 ptsMemoryMode;
-	// GPU / OpenCL options
-
-	// mode option
 	uint32 mode;
-}commandlineInput_t;
+} commandlineInput_t;
 
 commandlineInput_t commandlineInput;
 
@@ -268,7 +264,7 @@ void jhProtominer_xptQueryWorkLoop()
 					if (totalCollisionCount) {
 						char *hex = "0123456789abcdef";
 						char prevblk[65];
-						for (int i = 0; i < 32; i++) {
+						for (int i = 31; i >= 0; i--) {
 							prevblk[i * 2] = hex[(unsigned int)xptClient->blockWorkInfo.prevBlockHash[i] / 16];
 							prevblk[i * 2 + 1] = hex[(unsigned int)xptClient->blockWorkInfo.prevBlockHash[i] % 16];
 						}
