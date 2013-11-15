@@ -264,9 +264,9 @@ void jhProtominer_xptQueryWorkLoop()
 					if (totalCollisionCount) {
 						char *hex = "0123456789abcdef";
 						char prevblk[65];
-						for (int i = 31; i >= 0; i--) {
-							prevblk[i * 2] = hex[(unsigned int)xptClient->blockWorkInfo.prevBlockHash[i] / 16];
-							prevblk[i * 2 + 1] = hex[(unsigned int)xptClient->blockWorkInfo.prevBlockHash[i] % 16];
+						for (int i = 0; i < 32; i++) {
+							prevblk[i * 2] = hex[(unsigned int)xptClient->blockWorkInfo.prevBlockHash[31 - i] / 16];
+							prevblk[i * 2 + 1] = hex[(unsigned int)xptClient->blockWorkInfo.prevBlockHash[31 - i] % 16];
 						}
 						prevblk[64] = '\0';
 						applog("New block: %d %s", xptClient->blockWorkInfo.height - 1, prevblk);
