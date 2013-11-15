@@ -1,7 +1,11 @@
 #include "global.h"
 #include <time.h>
 
-char* minerVersionString = "jhProtominer for PTSPool.com";
+#ifdef __WIN32__
+char* minerVersionString = _strdup("jhProtominer v0.1c");
+#else
+char* minerVersionString = _strdup("jhProtominer v0.1c-Linux");
+#endif
 
 minerSettings_t minerSettings = {0};
 
@@ -429,10 +433,8 @@ void jhProtominer_parseCommandline(int argc, char **argv)
 
 int main(int argc, char** argv)
 {
-	commandlineInput.host = "112.124.13.238";
-	commandlineInput.port = 28988;
-	commandlineInput.workername = "PpXRMhz5dDHtFYpbDTpiAMJaVarMUJURT6";
-	commandlineInput.workerpass = "x";
+	commandlineInput.host = _strdup("ypool.net");
+	commandlineInput.port = 8080;
 	commandlineInput.ptsMemoryMode = PROTOSHARE_MEM_256;
 	SYSTEM_INFO sysinfo;
 	GetSystemInfo( &sysinfo );
