@@ -27,7 +27,7 @@ bool xptServer_sendBlockData(xptServer_t* xptServer, xptServerClient_t* xptServe
 	// we need several callbacks to the main work manager:
 	if( xptServerClient->payloadNum < 1 || xptServerClient->payloadNum > 128 )
 	{
-		printf("xptServer_sendBlockData(): payloadNum out of range for worker %s\n", xptServerClient->workerName);
+		applog("xptServer_sendBlockData(): payloadNum out of range for worker %s", xptServerClient->workerName);
 		return false;
 	}
 	// generate work
@@ -35,7 +35,7 @@ bool xptServer_sendBlockData(xptServer_t* xptServer, xptServerClient_t* xptServe
 	xptWorkData_t workData[128];
 	if( xptServer->xptCallback_generateWork(xptServer, xptServerClient->payloadNum, xptServerClient->coinTypeIndex, &blockWorkInfo, workData) == false )
 	{
-		printf("xptServer_sendBlockData(): Unable to generate work data for worker %s\n", xptServerClient->workerName);
+		applog("xptServer_sendBlockData(): Unable to generate work data for worker %s", xptServerClient->workerName);
 		return false;
 	}
 	// build the packet

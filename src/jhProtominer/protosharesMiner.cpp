@@ -111,12 +111,12 @@ bool protoshares_revalidateCollision(minerProtosharesBlock_t* block, uint8* midH
 #undef COLLISION_KEY_WIDTH
 #undef COLLISION_KEY_MASK
 #define CACHED_HASHES			(32)
-#define COLLISION_TABLE_BITS	(27)
+#define COLLISION_TABLE_BITS	(28)
 #define COLLISION_TABLE_SIZE	(1<<COLLISION_TABLE_BITS)
 #define COLLISION_KEY_WIDTH		(32-COLLISION_TABLE_BITS)
 #define COLLISION_KEY_MASK		(0xFFFFFFFF<<(32-(COLLISION_KEY_WIDTH)))
 
-void protoshares_process_512(minerProtosharesBlock_t* block)
+void protoshares_process_1024(minerProtosharesBlock_t* block, volatile bool *restart)
 {
 	// generate mid hash using sha256 (header hash)
 	uint8 midHash[32];
@@ -138,7 +138,85 @@ void protoshares_process_512(minerProtosharesBlock_t* block)
 	sha512_ctx c512;
 	uint64 resultHashStorage[8*CACHED_HASHES];
 	memcpy(tempHash+4, midHash, 32);
-	for(uint32 n=0; n<MAX_MOMENTUM_NONCE; n += BIRTHDAYS_PER_HASH * CACHED_HASHES)
+	for(uint32 n=0; n<MAX_MOMENTUM_NONCE&&!*restart; n += BIRTHDAYS_PER_HASH * CACHED_HASHES)
+	{
+		// generate hash (birthdayA)
+		//sha512_init(&c512);
+		//sha512_update(&c512, tempHash, 32+4);
+		//sha512_final(&c512, (unsigned char*)resultHash);
+		//sha512(tempHash, 32+4, (unsigned char*)resultHash);
+		for(uint32 m=0; m<CACHED_HASHES; m++)
+		{
+			sha512_init(&c512);
+			*(uint32*)tempHash = n+m*8;
+			sha512_update_final(&c512, tempHash, 32+4, (unsigned char*)(resultHashStorage+8*m));
+		}
+		for(uint32 m=0; m<CACHED_HASHES; m++)
+		{
+			uint64* resultHash = resultHashStorage + 8*m;
+			uint32 i = n + m*8;
+			//uint64 resultHash2[8];
+			//sha512_init(&c512);
+			//sha512_update(&c512, tempHash, 32+4);
+			//sha512_final(&c512, (unsigned char*)resultHash);
+			//sha512(tempHash, 32+4, (unsigned char*)resultHash2);
+			//if( memcmp(resultHash, resultHash2, sizeof(resultHash2)) )
+			//	__debugbreak();
+
+
+			for(uint32 f=0; f<8; f++)
+			{
+				uint64 birthday = resultHash[f] >> (64ULL-SEARCH_SPACE_BITS);
+				uint32 collisionKey = (uint32)((birthday>>18) & COLLISION_KEY_MASK);
+				birthday %= COLLISION_TABLE_SIZE;
+				if( collisionIndices[birthday] )
+				{
+					if( ((collisionIndices[birthday]&COLLISION_KEY_MASK) != collisionKey) || protoshares_revalidateCollision(block, midHash, collisionIndices[birthday]&~COLLISION_KEY_MASK, i+f) == false )
+					{
+						// invalid collision -> ignore
+						// todo: Maybe mark this entry as invalid?
+					}
+				}
+				collisionIndices[birthday] = i+f | collisionKey; // we have 6 bits available for validation
+			}
+		}
+	}
+}
+
+#undef CACHED_HASHES 
+#undef COLLISION_TABLE_BITS
+#undef COLLISION_TABLE_SIZE
+#undef COLLISION_KEY_WIDTH
+#undef COLLISION_KEY_MASK
+#define CACHED_HASHES			(32)
+#define COLLISION_TABLE_BITS	(27)
+#define COLLISION_TABLE_SIZE	(1<<COLLISION_TABLE_BITS)
+#define COLLISION_KEY_WIDTH		(32-COLLISION_TABLE_BITS)
+#define COLLISION_KEY_MASK		(0xFFFFFFFF<<(32-(COLLISION_KEY_WIDTH)))
+
+void protoshares_process_512(minerProtosharesBlock_t* block, volatile bool *restart)
+{
+	// generate mid hash using sha256 (header hash)
+	uint8 midHash[32];
+	sha256_ctx c256;
+	sha256_init(&c256);
+	sha256_update(&c256, (unsigned char*)block, 80);
+	sha256_final(&c256, midHash);
+	sha256_init(&c256);
+	sha256_update(&c256, (unsigned char*)midHash, 32);
+	sha256_final(&c256, midHash);
+	// init collision map
+	if( __collisionMap == NULL )
+		__collisionMap = (uint32*)malloc(sizeof(uint32)*COLLISION_TABLE_SIZE);
+	uint32* collisionIndices = __collisionMap;
+	memset(collisionIndices, 0x00, sizeof(uint32)*COLLISION_TABLE_SIZE);
+	// start search
+	// uint8 midHash[64];
+	uint8 tempHash[32+4];
+	sha512_ctx c512;
+	uint64 resultHashStorage[8*CACHED_HASHES];
+	memcpy(tempHash+4, midHash, 32);
+	for(uint32 n=0; n<MAX_MOMENTUM_NONCE&&!*restart; n += BIRTHDAYS_PER_HASH * CACHED_HASHES)
 	{
 		// generate hash (birthdayA)
 		//sha512_init(&c512);
@@ -194,7 +272,7 @@ void protoshares_process_512(minerProtosharesBlock_t* block)
 #define COLLISION_KEY_WIDTH		(32-COLLISION_TABLE_BITS)
 #define COLLISION_KEY_MASK		(0xFFFFFFFF<<(32-(COLLISION_KEY_WIDTH)))
 
-void protoshares_process_256(minerProtosharesBlock_t* block)
+void protoshares_process_256(minerProtosharesBlock_t* block, volatile bool *restart)
 {
 	// generate mid hash using sha256 (header hash)
 	uint8 midHash[32];
@@ -216,7 +294,7 @@ void protoshares_process_256(minerProtosharesBlock_t* block)
 	sha512_ctx c512;
 	uint64 resultHashStorage[8*CACHED_HASHES];
 	memcpy(tempHash+4, midHash, 32);
-	for(uint32 n=0; n<MAX_MOMENTUM_NONCE; n += BIRTHDAYS_PER_HASH * CACHED_HASHES)
+	for(uint32 n=0; n<MAX_MOMENTUM_NONCE&&!*restart; n += BIRTHDAYS_PER_HASH * CACHED_HASHES)
 	{
 		// generate hash (birthdayA)
 		//sha512_init(&c512);
@@ -272,7 +350,7 @@ void protoshares_process_256(minerProtosharesBlock_t* block)
 #define COLLISION_KEY_WIDTH		(32-COLLISION_TABLE_BITS)
 #define COLLISION_KEY_MASK		(0xFFFFFFFF<<(32-(COLLISION_KEY_WIDTH)))
 
-void protoshares_process_128(minerProtosharesBlock_t* block)
+void protoshares_process_128(minerProtosharesBlock_t* block, volatile bool *restart)
 {
 	// generate mid hash using sha256 (header hash)
 	uint8 midHash[32];
@@ -294,7 +372,7 @@ void protoshares_process_128(minerProtosharesBlock_t* block)
 	sha512_ctx c512;
 	uint64 resultHashStorage[8*CACHED_HASHES];
 	memcpy(tempHash+4, midHash, 32);
-	for(uint32 n=0; n<MAX_MOMENTUM_NONCE; n += BIRTHDAYS_PER_HASH * CACHED_HASHES)
+	for(uint32 n=0; n<MAX_MOMENTUM_NONCE&&!*restart; n += BIRTHDAYS_PER_HASH * CACHED_HASHES)
 	{
 		// generate hash (birthdayA)
 		//sha512_init(&c512);
@@ -350,7 +428,7 @@ void protoshares_process_128(minerProtosharesBlock_t* block)
 #define COLLISION_KEY_WIDTH		(32-COLLISION_TABLE_BITS)
 #define COLLISION_KEY_MASK		(0xFFFFFFFF<<(32-(COLLISION_KEY_WIDTH)))
 
-void protoshares_process_32(minerProtosharesBlock_t* block)
+void protoshares_process_32(minerProtosharesBlock_t* block, volatile bool *restart)
 {
 	// generate mid hash using sha256 (header hash)
 	uint8 midHash[32];
@@ -372,7 +450,7 @@ void protoshares_process_32(minerProtosharesBlock_t* block)
 	sha512_ctx c512;
 	uint64 resultHashStorage[8*CACHED_HASHES];
 	memcpy(tempHash+4, midHash, 32);
-	for(uint32 n=0; n<MAX_MOMENTUM_NONCE; n += BIRTHDAYS_PER_HASH * CACHED_HASHES)
+	for(uint32 n=0; n<MAX_MOMENTUM_NONCE&&!*restart; n += BIRTHDAYS_PER_HASH * CACHED_HASHES)
 	{
 		// generate hash (birthdayA)
 		//sha512_init(&c512);
@@ -428,7 +506,7 @@ void protoshares_process_32(minerProtosharesBlock_t* block)
 #define COLLISION_KEY_WIDTH		(32-COLLISION_TABLE_BITS)
 #define COLLISION_KEY_MASK		(0xFFFFFFFF<<(32-(COLLISION_KEY_WIDTH)))
 
-void protoshares_process_8(minerProtosharesBlock_t* block)
+void protoshares_process_8(minerProtosharesBlock_t* block, volatile bool *restart)
 {
 	// generate mid hash using sha256 (header hash)
 	uint8 midHash[32];
@@ -450,7 +528,7 @@ void protoshares_process_8(minerProtosharesBlock_t* block)
 	sha512_ctx c512;
 	uint64 resultHashStorage[8*CACHED_HASHES];
 	memcpy(tempHash+4, midHash, 32);
-	for(uint32 n=0; n<MAX_MOMENTUM_NONCE; n += BIRTHDAYS_PER_HASH * CACHED_HASHES)
+	for(uint32 n=0; n<MAX_MOMENTUM_NONCE&&!*restart; n += BIRTHDAYS_PER_HASH * CACHED_HASHES)
 	{
 		// generate hash (birthdayA)
 		//sha512_init(&c512);
