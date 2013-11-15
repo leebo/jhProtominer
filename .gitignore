@@ -1,12 +1,13 @@
 #################
 ## Eclipse
 #################
-
+jhProtominer
 *.pydevproject
 .project
 .metadata
 bin/
 tmp/
+*.o
 *.tmp
 *.bak
 *.swp

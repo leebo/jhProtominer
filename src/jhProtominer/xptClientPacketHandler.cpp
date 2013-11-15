@@ -23,16 +23,16 @@ bool xptClient_processPacket_authResponse(xptClient_t* xptClient)
 	if( authErrorCode == 0 )
 	{
 		xptClient->clientState = XPT_CLIENT_STATE_LOGGED_IN;
-		applog("xpt: Logged in with %s", xptClient->username);
+		printf("xpt: Logged in with %s", xptClient->username);
 		if( rejectReason[0] != '\0' )
-			applog("Message from server: %s", rejectReason);
+			printf("Message from server: %s", rejectReason);
 	}
 	else
 	{
 		// error logging in -> disconnect
-		applog("xpt: Failed to log in with %s", xptClient->username);
+		printf("xpt: Failed to log in with %s", xptClient->username);
 		if( rejectReason[0] != '\0' )
-			applog("Reason: %s", rejectReason);
+			printf("Reason: %s", rejectReason);
 		return false;
 	}
 	// get algorithm used by this worker
@@ -163,9 +163,9 @@ bool xptClient_processPacket_shareAck(xptClient_t* xptClient)
 	{
 		// share not accepted by server
 		if( rejectReason[0] != '\0' ) {
-			applog("Invalid share: %s", rejectReason);
+			printf("Invalid share: %s", rejectReason);
 		}else {
-			applog("Invalid share");
+			printf("Invalid share");
 		}
 	}
 	return true;
@@ -192,6 +192,6 @@ bool xptClient_processPacket_message(xptClient_t* xptClient)
 	messageText[1023] = '\0';
 	if( readError )
 		return false;
-	applog("Server message: %s", messageText);
+	printf("Server message: %s", messageText);
 	return true;
 }

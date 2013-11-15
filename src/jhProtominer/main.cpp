@@ -27,23 +27,8 @@ typedef struct
 
 commandlineInput_t commandlineInput;
 
-void applog(const char *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	char f[1024];
-	int len;
-	time_t rawtime;
-	struct tm timeinfo;
-	time(&rawtime);
-	localtime_s(&timeinfo, &rawtime);
-	len = strlen(fmt) + 13;
-	sprintf_s(f, "[%02d:%02d:%02d] %s\n", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec, fmt);
-	vfprintf(stderr, f, ap);
-	va_end(ap);
-}
 
-struct  
+static struct  
 {
 	CRITICAL_SECTION cs_work;
 	uint32	algorithm;
@@ -71,11 +56,11 @@ uint32 miningStartTime = 0;
 
 void jhProtominer_submitShare(minerProtosharesBlock_t* block)
 {
-	applog("Share found!");
+	printf("Share found!\n");
 	EnterCriticalSection(&cs_xptClient);
 	if( xptClient == NULL )
 	{
-		applog("Share submission failed - No connection to server");
+		printf("Share submission failed - No connection to server\n");
 		LeaveCriticalSection(&cs_xptClient);
 		return;
 	}
@@ -158,7 +143,7 @@ int jhProtominer_minerThread(int threadIndex)
 			protoshares_process_8(&minerProtosharesBlock, &restarts[threadIndex]);
 			break;
 		default:
-			applog("Unknown memory mode");
+			printf("Unknown memory mode\n");
 			Sleep(5000);
 			break;
 		}
@@ -191,7 +176,7 @@ void jhProtominer_getWorkFromXPTConnection(xptClient_t* xptClient)
 	// get hashes
 	if( xptClient->blockWorkInfo.txHashCount >= 256 )
 	{
-		applog("Too many transaction hashes"); 
+		printf("Too many transaction hashes\n"); 
 		workDataSource.txHashCount = 0;
 	}
 	else
@@ -228,7 +213,7 @@ void jhProtominer_xptQueryWorkLoop()
 				{
 					collisionsPerMinute = (double)totalCollisionCount / (double)passedSeconds * 60.0;
 				}
-				applog("collisions/min: %.4lf Shares total: %d", collisionsPerMinute, totalShareCount);
+				printf("collisions/min: %.4lf Shares total: %d\n", collisionsPerMinute, totalShareCount);
 			}
 			timerPrintDetails = currentTick + 20000;
 		}
@@ -244,7 +229,7 @@ void jhProtominer_xptQueryWorkLoop()
 				workDataSource.height = 0;
 				LeaveCriticalSection(&workDataSource.cs_work);
 				// we lost connection :(
-				applog("Connection to server lost - Reconnect in 20 seconds");
+				printf("Connection to server lost - Reconnect in 20 seconds");
 				xptClient_free(xptClient);
 				xptClient = NULL;
 				LeaveCriticalSection(&cs_xptClient);
@@ -255,8 +240,8 @@ void jhProtominer_xptQueryWorkLoop()
 				// is protoshare algorithm?
 				if( xptClient->clientState == XPT_CLIENT_STATE_LOGGED_IN && xptClient->algorithm != ALGORITHM_PROTOSHARES )
 				{
-					applog("The miner is configured to use a different algorithm.");
-					applog("Make sure you miner login details are correct");
+					printf("The miner is configured to use a different algorithm.");
+					printf("Make sure you miner login details are correct");
 					// force disconnect
 					xptClient_free(xptClient);
 					xptClient = NULL;
@@ -273,7 +258,7 @@ void jhProtominer_xptQueryWorkLoop()
 							prevblk[i * 2 + 1] = hex[(unsigned int)xptClient->blockWorkInfo.prevBlockHash[31 - i] % 16];
 						}
 						prevblk[64] = '\0';
-						applog("New block: %d %s", xptClient->blockWorkInfo.height - 1, prevblk);
+						printf("New block: %d %s", xptClient->blockWorkInfo.height - 1, prevblk);
 						for (int i = 0; i < commandlineInput.numThreads; i++) {
 							restarts[i] = true;
 						}
@@ -292,13 +277,13 @@ void jhProtominer_xptQueryWorkLoop()
 			if( xptClient == NULL )
 			{
 				LeaveCriticalSection(&cs_xptClient);
-				applog("Connection attempt failed, retry in 20 seconds");
+				printf("Connection attempt failed, retry in 20 seconds");
 				Sleep(20000);
 			}
 			else
 			{
 				LeaveCriticalSection(&cs_xptClient);
-				applog("Connected to server using x.pushthrough(xpt) protocol");
+				printf("Connected to server using x.pushthrough(xpt) protocol");
 				miningStartTime = (uint32)time(NULL);
 				totalCollisionCount = 0;
 			}
@@ -335,7 +320,7 @@ void jhProtominer_parseCommandline(int argc, char **argv)
 			// -o
 			if( cIdx >= argc )
 			{
-				applog("Missing URL after -o option");
+				printf("Missing URL after -o option");
 				exit(0);
 			}
 			if( strstr(argv[cIdx], "http://") )
@@ -355,7 +340,7 @@ void jhProtominer_parseCommandline(int argc, char **argv)
 			// -u
 			if( cIdx >= argc )
 			{
-				applog("Missing username/workername after -u option");
+				printf("Missing username/workername after -u option");
 				exit(0);
 			}
 			commandlineInput.workername = _strdup(argv[cIdx]);
@@ -366,7 +351,7 @@ void jhProtominer_parseCommandline(int argc, char **argv)
 			// -p
 			if( cIdx >= argc )
 			{
-				applog("Missing password after -p option");
+				printf("Missing password after -p option");
 				exit(0);
 			}
 			commandlineInput.workerpass = _strdup(argv[cIdx]);
@@ -377,13 +362,13 @@ void jhProtominer_parseCommandline(int argc, char **argv)
 			// -t
 			if( cIdx >= argc )
 			{
-				applog("Missing thread number after -t option");
+				printf("Missing thread number after -t option");
 				exit(0);
 			}
 			commandlineInput.numThreads = atoi(argv[cIdx]);
 			if( commandlineInput.numThreads < 1 || commandlineInput.numThreads > 128 )
 			{
-				applog("-t parameter out of range");
+				printf("-t parameter out of range");
 				exit(0);
 			}
 			cIdx++;
@@ -419,7 +404,7 @@ void jhProtominer_parseCommandline(int argc, char **argv)
 		}
 		else
 		{
-			applog("'%s' is an unknown option.\nType jhPrimeminer.exe --help for more info", argument); 
+			printf("'%s' is an unknown option.\nType jhPrimeminer.exe --help for more info", argument); 
 			exit(-1);
 		}
 	}
@@ -442,10 +427,10 @@ int main(int argc, char** argv)
 	commandlineInput.numThreads = min(max(commandlineInput.numThreads, 1), 4);
 	jhProtominer_parseCommandline(argc, argv);
 	minerSettings.protoshareMemoryMode = commandlineInput.ptsMemoryMode;
-	applog("Launching miner...");
+	printf("Launching miner...");
 	uint32 mbTable[] = {1024,512,256,128,32,8};
-	applog("Using %d megabytes of memory per thread", mbTable[min(commandlineInput.ptsMemoryMode,(sizeof(mbTable)/sizeof(mbTable[0])))]);
-	applog("Using %d threads", commandlineInput.numThreads);
+	printf("Using %d megabytes of memory per thread", mbTable[min(commandlineInput.ptsMemoryMode,(sizeof(mbTable)/sizeof(mbTable[0])))]);
+	printf("Using %d threads", commandlineInput.numThreads);
 	// set priority to below normal
 	SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
 	// init winsock
@@ -456,7 +441,7 @@ int main(int argc, char** argv)
 	hostent* hostInfo = gethostbyname(poolURL);
 	if( hostInfo == NULL )
 	{
-		applog("Cannot resolve '%s'. Is it a valid URL?", poolURL);
+		printf("Cannot resolve '%s'. Is it a valid URL?", poolURL);
 		exit(-1);
 	}
 	void** ipListPtr = (void**)hostInfo->h_addr_list;

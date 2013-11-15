@@ -209,7 +209,7 @@ bool xptClient_process(xptClient_t* xptClient)
 		if( packetDataSize >= (1024*1024*2-4) )
 		{
 			// packets larger than 4mb are not allowed
-			applog("xptServer_receiveData(): Packet exceeds 2mb size limit");
+			printf("xptServer_receiveData(): Packet exceeds 2mb size limit");
 			return false;
 		}
 		xptClient->recvSize = packetDataSize;

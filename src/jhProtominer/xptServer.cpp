@@ -57,7 +57,7 @@ bool xptServer_processPacket(xptServer_t* xptServer, xptServerClient_t* xptServe
 	{
 		return xptServer_processPacket_authRequest(xptServer, xptServerClient);
 	}
-	applog("xptServer_processPacket(): Received unknown opcode %d", xptServerClient->opcode);
+	printf("xptServer_processPacket(): Received unknown opcode %d", xptServerClient->opcode);
 	return false; // invalid packet -> disconnect client
 }
 
@@ -89,7 +89,7 @@ bool xptServer_receiveData(xptServer_t* xptServer, xptServerClient_t* xptServerC
 		if( packetDataSize >= (1024*1024*2-4) )
 		{
 			// packets larger than 4mb are not allowed
-			applog("xptServer_receiveData(): Packet exceeds 2mb size limit");
+			printf("xptServer_receiveData(): Packet exceeds 2mb size limit");
 			return false;
 		}
 		xptServerClient->recvSize = packetDataSize;
@@ -144,7 +144,7 @@ void xptServer_sendNewBlockToAll(xptServer_t* xptServer, uint32 coinTypeIndex)
 		payloadCount += xptServerClient->payloadNum;
 	}
 	uint32 time2 = GetTickCount() - time1;
-	applog("Send %d blocks to %d workers in %dms", payloadCount, workerCount, time2);
+	printf("Send %d blocks to %d workers in %dms", payloadCount, workerCount, time2);
 }
 
 /*
@@ -159,7 +159,7 @@ void xptServer_checkForNewBlocks(xptServer_t* xptServer)
 	{
 		if( blockHeightPerCoinType[i] > xptServer->coinTypeBlockHeight[i] )
 		{
-			applog("New block arrived for coinType %d", i+1);
+			printf("New block arrived for coinType %d", i+1);
 			xptServer_sendNewBlockToAll(xptServer, i);
 			xptServer->coinTypeBlockHeight[i] = blockHeightPerCoinType[i];
 		}

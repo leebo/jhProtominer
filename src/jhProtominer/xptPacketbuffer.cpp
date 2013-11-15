@@ -252,7 +252,7 @@ void xptPacketbuffer_writeString(xptPacketbuffer_t* pb, char* stringData, uint32
 {
 	if( maxStringLength == 0 || maxStringLength > 0xFFFF )
 	{
-		applog("xptPacketbuffer_writeData(): Invalid maxStringLength");
+		printf("xptPacketbuffer_writeData(): Invalid maxStringLength");
 		// strings of max length 0 or longer than 2^16-1 are not supported
 		*error = true;
 		return;
@@ -262,7 +262,7 @@ void xptPacketbuffer_writeString(xptPacketbuffer_t* pb, char* stringData, uint32
 	uint32 stringLength = (uint32)strlen(stringData);
 	if( stringLength > maxStringLength )
 	{
-		applog("xptPacketbuffer_writeData(): String is longer than maxStringLength");
+		printf("xptPacketbuffer_writeData(): String is longer than maxStringLength");
 		// string longer than max length
 		*error = true;
 		return;
@@ -275,7 +275,7 @@ void xptPacketbuffer_writeString(xptPacketbuffer_t* pb, char* stringData, uint32
 	// packet buffer large enough?
 	if( (pb->parserIndex+fullLength) > pb->bufferLimit )
 	{
-		applog("xptPacketbuffer_writeData(): Packetbuffer too small");
+		printf("xptPacketbuffer_writeData(): Packetbuffer too small");
 		*error = true;
 		return;
 	}
@@ -304,7 +304,7 @@ void xptPacketbuffer_readString(xptPacketbuffer_t* pb, char* stringData, uint32 
 {
 	if( maxStringLength == 0 || maxStringLength > 0xFFFF )
 	{
-		applog("xptPacketbuffer_readString(): Invalid maxStringLength");
+		printf("xptPacketbuffer_readString(): Invalid maxStringLength");
 		// strings of max length 0 or longer than 2^16-1 are not supported
 		*error = true;
 		return;
@@ -327,14 +327,14 @@ void xptPacketbuffer_readString(xptPacketbuffer_t* pb, char* stringData, uint32 
 	// string length valid?
 	if( stringLength >= maxStringLength )
 	{
-		applog("xptPacketbuffer_readString(): Stringlength invalid");
+		printf("xptPacketbuffer_readString(): Stringlength invalid");
 		*error = true;
 		return;	
 	}
 	// packet data large enough?
 	if( (pb->parserIndex+stringLength) > pb->bufferSize )
 	{
-		applog("xptPacketbuffer_readString(): End of data in string");
+		printf("xptPacketbuffer_readString(): End of data in string");
 		*error = true;
 		return;
 	}
